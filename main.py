@@ -7,56 +7,98 @@ from kivy.uix.button import Button
 from kivy.uix.anchorlayout import AnchorLayout
 from uuid import uuid4
 from kivy.uix.scrollview import ScrollView
+import mysql.connector
+from datetime import datetime
+
+config = {
+    'user': 'root',
+    'password': 'root',
+    'host': 'localhost',
+    'database': 'zooshop',
+    'raise_on_warnings': True,
+}
+
+conn = mysql.connector.connect(**config)
+cursor = conn.cursor()
 
 Window.clearcolor = (247 / 255, 237 / 255, 208 / 255, 1)
-
-animals = [['1', 'Barsik', 'cat', 'ser', 'Dima'],
-           ['2', 'Sam', 'dog', 'se', 'Anatoliy'],
-           ['2', 'Sam', 'dog', 'se', 'Anatoliy'],
-           ['3', 'dog', 'hamster', 's', 'Nika'],
-           ['3', 'dog', 'hamster', 's', 'Nika']]
-
-clients = [['1', 'Dima', '+380975954281', '19-01-2005'],
-           ['2', 'Anatoliy', '+3807573152', '29-11-2004'],
-           ['2', 'Anatoliy', '+3807573152', '29-11-2004'],
-           ['2', 'Anatoliy', '+3807573152', '29-11-2004'],
-           ['2', 'Anatoliy', '+3807573152', '29-11-2004'],
-           ['3', 'Nika', '+38012321321', '12-02-2005']]
-
-goods = [['1', 'osheynik', '300', '001'],
-         [str(uuid4()), 'osheynik', '400', '002'],
-         [str(uuid4()), 'osheynik', '400', '002'],
-         [str(uuid4()), 'osheynik', '400', '002'],
-         [str(uuid4()), 'osheynik', '400', '002'],
-         [str(uuid4()), 'osheynik', '500', '003'],
-         [str(uuid4()), 'osheynik', '500', '003'],
-         [str(uuid4()), 'osheynik', '500', '003'],
-         [str(uuid4()), 'osheynik', '500', '003'],
-         [str(uuid4()), 'osheynik', '500', '003'],
-         [str(uuid4()), 'osheynik', '500', '003'],
-         [str(uuid4()), 'osheynik', '500', '003']]
-
-service = [['1', 'cat', '300', 'service1'],
-           ['2', 'cat', '400', 'service2'],
-           ['2', 'cat', '400', 'service2'],
-           ['2', 'cat', '400', 'service2'],
-           ['2', 'cat', '400', 'service2'],
-           ['2', 'cat', '400', 'service2'],
-           ['2', 'cat', '400', 'service2'],
-           ['2', 'cat', '400', 'service2'],
-           ['2', 'cat', '400', 'service2'],
-           ['2', 'cat', '400', 'service2'],
-           ['2', 'cat', '400', 'service2'],
-           ['3', 'dog', '500', 'service3']]
 
 
 class TableApp(App):
     def __init__(self, table, **kwargs):
+        self.del_id_input = None
+        self.change_input = None
+        self.field_input = None
+        self.id_input = None
         self.table = table
+        self.title_input = None
+        self.vendor_input = None
+        self.price_input = None
+        self.birth_input = None
+        self.phone_input = None
+        self.password_input = None
+        self.name_input = None
+        self.animal_input = None
+        self.owner_input = None
+
         super(TableApp, self).__init__(**kwargs)
 
-    @staticmethod
-    def add_buttons(add_layout, edit_layout, delete_layout, button_layout, id_input, field_input, change_input,
+    def press_add(self, instance):
+        if self.table == 'animals':
+            nickname = self.name_input.text
+            kind_of_animal = self.animal_input.text
+            owner = self.owner_input.text
+
+            cursor.execute('INSERT INTO animals (nickname, kind_of_animal, owner) VALUES (%s, %s, %s)',
+                           [nickname, kind_of_animal, owner])
+        elif self.table == 'clients':
+            name = self.name_input.text
+            phone_number = self.phone_input.text
+            birth_day = self.birth_input.text
+            password = self.password_input.text
+            date_format = '%d-%m-%Y'
+            date_obj = datetime.strptime(birth_day, date_format)
+
+            cursor.execute('INSERT INTO `clients` (name, phone_number, birth_day, password) VALUES (%s, %s, %s, %s)',
+                           [name, int(phone_number), date_obj, password])
+        elif self.table == 'goods':
+            name_good = self.name_input.text
+            price = self.price_input.text
+            vendor_code = self.vendor_input.text
+
+            cursor.execute('INSERT INTO `goods` (guid, name_good, price, vendor_code) VALUES (%s, %s, %s, %s)',
+                           [str(uuid4()), name_good, int(price), int(vendor_code)])
+        elif self.table == 'services':
+            kind_of_animal = self.animal_input.text
+            price = self.price_input.text
+            title = self.title_input.text
+
+            cursor.execute('INSERT INTO `services` (kind_of_animal, price, title) VALUES (%s, %s, %s)',
+                           [kind_of_animal, int(price), title])
+
+        conn.commit()
+        self.stop()
+        self.run()
+
+    def press_edit(self, instance):
+        change_id = self.id_input.text
+        field = self.field_input.text
+        change = self.change_input.text
+        cursor.execute(f'UPDATE {self.table} SET {field} = %s WHERE id = %s', [change, change_id])
+        conn.commit()
+
+        self.stop()
+        self.run()
+
+    def press_delete(self, instance):
+        del_id = self.del_id_input.text
+        cursor.execute(f'DELETE FROM {self.table} WHERE id = %s', (del_id,))
+        conn.commit()
+
+        self.stop()
+        self.run()
+
+    def add_buttons(self, add_layout, edit_layout, delete_layout, button_layout, id_input, field_input, change_input,
                     del_id_input,
                     *args):
         add_layout.add_widget(Label(text='Add', size=(50, 10), color=(0, 0, 0, 1), size_hint=(None, None)))
@@ -65,19 +107,19 @@ class TableApp(App):
             add_layout.add_widget(args[i])
 
         add_layout.add_widget(Button(text='add', background_color=(0, 0, 0, 1), size=(100, 30),
-                                     size_hint=(None, None)))
+                                     size_hint=(None, None), on_press=self.press_add))
 
         edit_layout.add_widget(Label(text='Edit', size=(50, 10), color=(0, 0, 0, 1), size_hint=(None, None)))
         edit_layout.add_widget(id_input)
         edit_layout.add_widget(field_input)
         edit_layout.add_widget(change_input)
         edit_layout.add_widget(Button(text='edit', background_color=(0, 0, 0, 1), size=(100, 30),
-                                      size_hint=(None, None)))
+                                      size_hint=(None, None), on_press=self.press_edit))
 
         delete_layout.add_widget(Label(text='Delete', size=(50, 10), color=(0, 0, 0, 1), size_hint=(None, None)))
         delete_layout.add_widget(del_id_input)
         delete_layout.add_widget(Button(text='delete', background_color=(0, 0, 0, 1), size=(100, 30),
-                                        size_hint=(None, None)))
+                                        size_hint=(None, None), on_press=self.press_delete))
 
         button_layout.add_widget(add_layout)
         button_layout.add_widget(edit_layout)
@@ -103,16 +145,16 @@ class TableApp(App):
     def add_fields_to_table(table, *args):
         for i in table:
             if len(args) == 5:
-                args[0].add_widget(Label(text=i[0], size=(50, 10), color=(0, 0, 0, 1), size_hint=(None, None)))
-                args[1].add_widget(Label(text=i[1], size=(50, 10), color=(0, 0, 0, 1), size_hint=(None, None)))
-                args[2].add_widget(Label(text=i[2], size=(50, 10), color=(0, 0, 0, 1), size_hint=(None, None)))
-                args[3].add_widget(Label(text=i[3], size=(50, 10), color=(0, 0, 0, 1), size_hint=(None, None)))
-                args[4].add_widget(Label(text=i[4], size=(50, 10), color=(0, 0, 0, 1), size_hint=(None, None)))
+                args[0].add_widget(Label(text=str(i[0]), size=(50, 10), color=(0, 0, 0, 1), size_hint=(None, None)))
+                args[1].add_widget(Label(text=str(i[1]), size=(50, 10), color=(0, 0, 0, 1), size_hint=(None, None)))
+                args[2].add_widget(Label(text=str(i[2]), size=(50, 10), color=(0, 0, 0, 1), size_hint=(None, None)))
+                args[3].add_widget(Label(text=str(i[3]), size=(50, 10), color=(0, 0, 0, 1), size_hint=(None, None)))
+                args[4].add_widget(Label(text=str(i[4]), size=(50, 10), color=(0, 0, 0, 1), size_hint=(None, None)))
             elif len(args) == 4:
-                args[0].add_widget(Label(text=i[0], size=(50, 10), color=(0, 0, 0, 1), size_hint=(None, None)))
-                args[1].add_widget(Label(text=i[1], size=(50, 10), color=(0, 0, 0, 1), size_hint=(None, None)))
-                args[2].add_widget(Label(text=i[2], size=(50, 10), color=(0, 0, 0, 1), size_hint=(None, None)))
-                args[3].add_widget(Label(text=i[3], size=(50, 10), color=(0, 0, 0, 1), size_hint=(None, None)))
+                args[0].add_widget(Label(text=str(i[0]), size=(50, 10), color=(0, 0, 0, 1), size_hint=(None, None)))
+                args[1].add_widget(Label(text=str(i[1]), size=(50, 10), color=(0, 0, 0, 1), size_hint=(None, None)))
+                args[2].add_widget(Label(text=str(i[2]), size=(50, 10), color=(0, 0, 0, 1), size_hint=(None, None)))
+                args[3].add_widget(Label(text=str(i[3]), size=(50, 10), color=(0, 0, 0, 1), size_hint=(None, None)))
 
     def build(self):
         layout = BoxLayout(orientation='horizontal', spacing=10, size_hint=(None, 1.5), padding=[120, 0])
@@ -130,58 +172,67 @@ class TableApp(App):
         price_l = BoxLayout(orientation='vertical', spacing=15, size_hint=(None, None))
         price = Label(text='price', size=(50, 10), color=(0, 0, 0, 1), size_hint=(None, None))
 
-        id_input = TextInput(size_hint=(None, None), size=(150, 30),
-                             hint_text='Enter id to modify')
-        field_input = TextInput(size_hint=(None, None), size=(150, 30),
-                                hint_text='Enter field to modify')
-        change_input = TextInput(size_hint=(None, None), size=(150, 30),
-                                 hint_text='Enter data to change')
-        del_id_input = TextInput(size_hint=(None, None), size=(150, 30),
-                                 hint_text='Enter id to delete')
-        animal_input = TextInput(size_hint=(None, None), size=(150, 30),
-                                 hint_text='Enter kind of animal')
-        name_input = TextInput(size_hint=(None, None), size=(150, 30),
-                               hint_text='Enter name')
+        self.id_input = TextInput(size_hint=(None, None), size=(150, 30),
+                                  hint_text='Enter id to modify')
+        self.field_input = TextInput(size_hint=(None, None), size=(150, 30),
+                                     hint_text='Enter field to modify')
+        self.change_input = TextInput(size_hint=(None, None), size=(150, 30),
+                                      hint_text='Enter data to change')
+        self.del_id_input = TextInput(size_hint=(None, None), size=(150, 30),
+                                      hint_text='Enter id to delete')
+
+        self.animal_input = TextInput(size_hint=(None, None), size=(150, 30),
+                                      hint_text='Enter kind of animal')
+        self.name_input = TextInput(size_hint=(None, None), size=(150, 30),
+                                    hint_text='Enter name')
 
         if self.table == 'animals':
-            services_l = BoxLayout(orientation='vertical', spacing=15, size_hint=(None, None))
+            self.owner_input = TextInput(size_hint=(None, None), size=(150, 30),
+                                         hint_text='Enter owner')
+
             owner_l = BoxLayout(orientation='vertical', spacing=15, size_hint=(None, None))
 
             nickname = Label(text='nickname', size=(50, 10), color=(0, 0, 0, 1), size_hint=(None, None))
-            services = Label(text='services', size=(50, 10), color=(0, 0, 0, 1), size_hint=(None, None))
             owner = Label(text='owner', size=(50, 10), color=(0, 0, 0, 1), size_hint=(None, None))
 
-            services_input = TextInput(size_hint=(None, None), size=(150, 30),
-                                       hint_text='Enter services')
-            owner_input = TextInput(size_hint=(None, None), size=(150, 30),
-                                    hint_text='Enter owner')
+            cursor.execute('SELECT * FROM animals')
+            animals = cursor.fetchall()
 
-            self.add_columns([id_l, id], [name_l, nickname], [kind_of_animal_l, kind_of_animal], [services_l, services],
+            self.add_columns([id_l, id], [name_l, nickname], [kind_of_animal_l, kind_of_animal],
                              [owner_l, owner])
-            self.add_fields_to_table(animals, id_l, name_l, kind_of_animal_l, services_l, owner_l)
-            self.add_items_to_layout(layout, button_layout, anchor, id_l, name_l, kind_of_animal_l, services_l, owner_l)
-            self.add_buttons(add_layout, edit_layout, delete_layout, button_layout, id_input, field_input, change_input,
-                             del_id_input, name_input, animal_input, services_input, owner_input)
+            self.add_fields_to_table(animals, id_l, name_l, kind_of_animal_l, owner_l)
+            self.add_items_to_layout(layout, button_layout, anchor, id_l, name_l, kind_of_animal_l, owner_l)
+            self.add_buttons(add_layout, edit_layout, delete_layout, button_layout, self.id_input, self.field_input,
+                             self.change_input, self.del_id_input,
+                             self.name_input, self.animal_input, self.owner_input)
 
             return anchor
         elif self.table == 'clients':
             phone_l = BoxLayout(orientation='vertical', spacing=15, size_hint=(None, None))
             birth_l = BoxLayout(orientation='vertical', spacing=15, size_hint=(None, None))
+            password_l = BoxLayout(orientation='vertical', spacing=15, size_hint=(None, None))
 
             name = Label(text='name', size=(50, 10), color=(0, 0, 0, 1), size_hint=(None, None))
-            phone = Label(text='Phone number', size=(50, 10), color=(0, 0, 0, 1), size_hint=(None, None))
-            birth = Label(text='Birth date', size=(50, 10), color=(0, 0, 0, 1), size_hint=(None, None))
+            phone = Label(text='phone number', size=(50, 10), color=(0, 0, 0, 1), size_hint=(None, None))
+            birth = Label(text='birth date', size=(50, 10), color=(0, 0, 0, 1), size_hint=(None, None))
+            password = Label(text='password', size=(50, 10), color=(0, 0, 0, 1), size_hint=(None, None))
 
-            phone_input = TextInput(size_hint=(None, None), size=(150, 30),
-                                    hint_text='Enter phone number')
-            birth_input = TextInput(size_hint=(None, None), size=(150, 30),
-                                    hint_text='Enter birth date')
+            self.phone_input = TextInput(size_hint=(None, None), size=(150, 30),
+                                         hint_text='Enter phone number')
+            self.birth_input = TextInput(size_hint=(None, None), size=(150, 30),
+                                         hint_text='Enter birth date')
+            self.password_input = TextInput(size_hint=(None, None), size=(150, 30),
+                                            hint_text='Enter password')
 
-            self.add_columns([id_l, id], [name_l, name], [phone_l, phone], [birth_l, birth])
-            self.add_fields_to_table(clients, id_l, name_l, phone_l, birth_l)
-            self.add_items_to_layout(layout, button_layout, anchor, id_l, name_l, phone_l, birth_l)
-            self.add_buttons(add_layout, edit_layout, delete_layout, button_layout, id_input, field_input, change_input,
-                             del_id_input, name_input, phone_input, birth_input)
+            cursor.execute('SELECT * FROM clients')
+            clients = cursor.fetchall()
+
+            self.add_columns([id_l, id], [name_l, name], [phone_l, phone], [birth_l, birth], [password_l, password])
+            self.add_fields_to_table(clients, id_l, name_l, phone_l, birth_l, password_l)
+            self.add_items_to_layout(layout, button_layout, anchor, id_l, name_l, phone_l, birth_l, password_l)
+            self.add_buttons(add_layout, edit_layout, delete_layout, button_layout, self.id_input, self.field_input,
+                             self.change_input, self.del_id_input,
+                             self.name_input, self.phone_input, self.birth_input, self.password_input)
 
             return anchor
         elif self.table == 'goods':
@@ -191,18 +242,21 @@ class TableApp(App):
             vendor_code = Label(text='vendor code', size=(50, 10), color=(0, 0, 0, 1), size_hint=(None, None))
             id = Label(text='guid', size=(50, 10), color=(0, 0, 0, 1), size_hint=(None, None))
 
-            price_input = TextInput(size_hint=(None, None), size=(150, 30),
-                                    hint_text='Enter price')
-            vendor_input = TextInput(size_hint=(None, None), size=(150, 30),
-                                     hint_text='Enter vendor code')
+            self.price_input = TextInput(size_hint=(None, None), size=(150, 30),
+                                         hint_text='Enter price')
+            self.vendor_input = TextInput(size_hint=(None, None), size=(150, 30),
+                                          hint_text='Enter vendor code')
+
+            cursor.execute('SELECT * FROM goods')
+            goods = cursor.fetchall()
 
             self.add_columns([id_l, id], [name_l, name_good], [price_l, price], [vendor_code_l, vendor_code])
             self.add_fields_to_table(goods, id_l, name_l, price_l, vendor_code_l)
             self.add_items_to_layout(layout, button_layout, anchor, id_l, BoxLayout(size_hint=(None, None), width=100),
                                      name_l, price_l, vendor_code_l)
-            self.add_buttons(add_layout, edit_layout, delete_layout, button_layout, id_input, field_input, change_input,
-                             del_id_input,
-                             name_input, price_input, vendor_input)
+            self.add_buttons(add_layout, edit_layout, delete_layout, button_layout, self.id_input, self.field_input,
+                             self.change_input, self.del_id_input,
+                             self.name_input, self.price_input, self.vendor_input)
 
             return anchor
         elif self.table == 'services':
@@ -210,17 +264,21 @@ class TableApp(App):
 
             title = Label(text='title', size=(50, 10), color=(0, 0, 0, 1), size_hint=(None, None))
 
-            price_input = TextInput(size_hint=(None, None), size=(150, 30),
-                                    hint_text='Enter price')
-            title_input = TextInput(size_hint=(None, None), size=(150, 30),
-                                    hint_text='Enter title')
+            self.price_input = TextInput(size_hint=(None, None), size=(150, 30),
+                                         hint_text='Enter price')
+            self.title_input = TextInput(size_hint=(None, None), size=(150, 30),
+                                         hint_text='Enter title')
+
+            cursor.execute('SELECT * FROM services')
+            service = cursor.fetchall()
 
             self.add_columns([id_l, id], [kind_of_animal_l, kind_of_animal], [price_l, price], [title_l, title])
             self.add_fields_to_table(service, id_l, kind_of_animal_l, price_l, title_l)
             self.add_items_to_layout(layout, button_layout, anchor, id_l, kind_of_animal_l, price_l, title_l)
-            self.add_buttons(add_layout, edit_layout, delete_layout, button_layout, id_input, field_input, change_input,
-                             del_id_input,
-                             animal_input, price_input, title_input)
+            self.add_buttons(add_layout, edit_layout, delete_layout, button_layout, self.id_input, self.field_input,
+                             self.change_input,
+                             self.del_id_input,
+                             self.animal_input, self.price_input, self.title_input)
 
             return anchor
 
@@ -256,19 +314,32 @@ class AdminApp(App):
 
 
 class StartApp(App):
+    def __init__(self, user_id, **kwargs):
+        super().__init__(**kwargs)
+        self.user_id = user_id
+
     def build(self):
         self.title = 'Shop'
+
+        cursor.execute('SELECT name, phone_number, birth_day FROM clients WHERE id = %s', (self.user_id,))
+        user_info = cursor.fetchone()
+
+        cursor.execute('SELECT nickname FROM animals WHERE owner = %s', (user_info[0],))
+        animals = [j for i in cursor.fetchall() for j in i]
+        user_animal = ', '.join(i for i in animals)
 
         goods_button = Button(text='Goods', background_color=(0, 0, 0, 1), size=(200, 50), size_hint=(None, None))
         services_button = Button(text='Services', background_color=(0, 0, 0, 1), size=(200, 50), size_hint=(None, None))
 
         client_label = Label(text='Client', size_hint=(None, None), size=(200, 10), color=(0, 0, 0, 1), bold=True,
                              font_size=20)
-        name_label = Label(text='Name - Anaaaksa', size=(200, 10), color=(0, 0, 0, 1), size_hint=(.9, None))
-        birth_label = Label(text='Birth date - 19.11.2000', size=(200, 10), color=(0, 0, 0, 1), size_hint=(1.15, None))
-        phone_label = Label(text='Phone number - +9821234561', size_hint=(None, None), size=(150, 10),
+        name_label = Label(text=f'Name - {user_info[0]}', size=(200, 10), color=(0, 0, 0, 1), size_hint=(None, None))
+        birth_label = Label(text=f'Birth date - {str(user_info[2])}', size=(200, 10), color=(0, 0, 0, 1),
+                            size_hint=(None, None))
+        phone_label = Label(text=f'Phone number - {user_info[1]}', size_hint=(2, None), size=(150, 10),
                             color=(0, 0, 0, 1))
-        animals_label = Label(text='Animals: cat, dog', size=(200, 10), color=(0, 0, 0, 1), size_hint=(.8, None))
+        animals_label = Label(text=f'Animals: {user_animal}', size=(200, 10), color=(0, 0, 0, 1),
+                              size_hint=(None, None))
 
         button_layout = BoxLayout(orientation='vertical', spacing=100)
         aside = AnchorLayout(anchor_x='left', anchor_y='center')
@@ -297,13 +368,23 @@ class StartApp(App):
 
 
 class RegistrationApp(App):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.login = TextInput(size_hint=(None, None), size=(220, 30), hint_text='Enter your login', pos=(100, 100))
+        self.password = TextInput(size_hint=(None, None), size=(220, 30),
+                                  hint_text='Enter your password', pos=(100, 80), password=True)
+        self.birth_date = TextInput(size_hint=(None, None), size=(220, 30),
+                                    hint_text='Enter your birth date', pos=(100, 60))
+        self.phone_number = TextInput(size_hint=(None, None), size=(220, 30),
+                                      hint_text='Enter your phone number', pos=(100, 40))
+
     def build(self):
         self.title = 'Authorization'
 
         login_button = Button(text='Login', background_color=(0, 0, 0, 1), size=(150, 10), size_hint=(None, None),
                               pos_hint={'center_x': 0.4}, on_press=self.press_login)
         register_button = Button(text='Register', background_color=(0, 0, 0, 1), size=(150, 10), size_hint=(None, None),
-                                 pos_hint={'center_x': 0.4}, on_press=self.press_login)
+                                 pos_hint={'center_x': 0.4}, on_press=self.press_register)
         admin_button = Button(text='Login as Admin', background_color=(0, 0, 0, 1), size=(150, 10),
                               size_hint=(None, None),
                               pos_hint={'center_x': 0.4}, on_press=self.press_admin)
@@ -313,15 +394,6 @@ class RegistrationApp(App):
         password_label = Label(text='Password', size_hint=(.27, None), size=(100, 10), color=(0, 0, 0, 1))
         birth_label = Label(text='Birth date', size_hint=(.27, None), size=(100, 10), color=(0, 0, 0, 1))
         phone_label = Label(text='Phone number', size_hint=(.4, None), size=(100, 10), color=(0, 0, 0, 1))
-
-        login = TextInput(size_hint=(None, None), size=(220, 30),
-                          hint_text='Enter your login', pos=(100, 100))
-        password = TextInput(size_hint=(None, None), size=(220, 30),
-                             hint_text='Enter your password', pos=(100, 80), password=True)
-        birth_date = TextInput(size_hint=(None, None), size=(220, 30),
-                               hint_text='Enter your birth date', pos=(100, 60))
-        phone_number = TextInput(size_hint=(None, None), size=(220, 30),
-                                 hint_text='Enter your phone number', pos=(100, 40))
 
         log_layout = BoxLayout(orientation='vertical', size=(250, 30), size_hint=(None, None), spacing=10)
         pas_layout = BoxLayout(orientation='vertical', size=(250, 30), size_hint=(None, None), spacing=10)
@@ -333,16 +405,16 @@ class RegistrationApp(App):
         layout = BoxLayout(orientation='vertical', pos=(300, 220), size=(180, 200), size_hint=(None, None), spacing=40)
 
         log_layout.add_widget(log_label)
-        log_layout.add_widget(login)
+        log_layout.add_widget(self.login)
 
         pas_layout.add_widget(password_label)
-        pas_layout.add_widget(password)
+        pas_layout.add_widget(self.password)
 
         date_layout.add_widget(birth_label)
-        date_layout.add_widget(birth_date)
+        date_layout.add_widget(self.birth_date)
 
         phone_layout.add_widget(phone_label)
-        phone_layout.add_widget(phone_number)
+        phone_layout.add_widget(self.phone_number)
 
         button_layout.add_widget(login_button)
         button_layout.add_widget(register_button)
@@ -362,12 +434,44 @@ class RegistrationApp(App):
         return anchor
 
     def press_login(self, instance):
-        self.stop()
-        StartApp().run()
+        name = self.login.text
+        password = self.password.text
+
+        if name and password:
+            cursor.execute('SELECT * FROM clients WHERE name = %s AND password = %s', (name, password))
+            result = cursor.fetchall()
+            conn.commit()
+
+            if result:
+                cursor.execute('SELECT id FROM clients WHERE name = %s', (name,))
+                user_id = cursor.fetchone()[0]
+                self.stop()
+                StartApp(user_id).run()
+        else:
+            print("Name or password is empty")
+
+    def press_register(self, instance):
+        name = self.login.text
+        phone_number = self.phone_number.text
+        birth_day = self.birth_date.text
+        password = self.password.text
+
+        date_format = '%d-%m-%Y'
+        date_obj = datetime.strptime(birth_day, date_format)
+
+        if name and password and birth_day and phone_number:
+            cursor.execute('INSERT INTO `clients` (name, phone_number, birth_day, password) VALUES (%s, %s, %s, %s)',
+                           [name, int(phone_number), date_obj, password])
+            cursor.execute('SELECT id FROM clients WHERE name = %s', (name,))
+            user_id = cursor.fetchone()[0]
+            conn.commit()
+            self.stop()
+            StartApp(user_id).run()
 
     def press_admin(self, instance):
-        self.stop()
-        AdminApp().run()
+        if self.login.text == 'admin' and self.password.text == 'admin':
+            self.stop()
+            AdminApp().run()
 
 
 if __name__ == '__main__':
