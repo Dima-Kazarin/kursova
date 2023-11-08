@@ -1,56 +1,70 @@
-from kivy.uix.button import Button
-import mysql.connector
 from kivy.app import App
-from kivy.uix.boxlayout import BoxLayout
-from kivy.graphics import Color, Rectangle, Line
-from kivy.uix.label import Label
-from kivy.uix.widget import Widget
-from kivy.uix.relativelayout import RelativeLayout
+from kivy.uix.anchorlayout import AnchorLayout
 from kivy.uix.scrollview import ScrollView
-from kivy.uix.textinput import TextInput
+from kivy.uix.gridlayout import GridLayout
+from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.label import Label
+from kivy.uix.button import Button
+from kivy.core.window import Window
+import mysql.connector
+
+Window.clearcolor = (247 / 255, 237 / 255, 208 / 255, 1)
+
+config = {
+    'user': 'root',
+    'password': 'root',
+    'host': 'localhost',
+    'database': 'zooshop',
+}
+
+conn = mysql.connector.connect(**config)
+cursor = conn.cursor()
 
 
-class MyWindow(BoxLayout):
-    def __init__(self, **kwargs):
-        super(MyWindow, self).__init__(**kwargs)
-        with self.canvas.before:
-            Color(0.913, 0.866, 0.788, 1)
-            self.rect = Rectangle(size=self.size, pos=self.pos)
-        self.padding = (20, 50)
-        self.orientation = 'horizontal'
+class ZooshopApp(App):
+    def build(self):
+        # root = BoxLayout(orientation='horizontal', spacing=10)
+        root = BoxLayout(orientation='horizontal', size=(250, 100), size_hint=(None, None),
+                  spacing=500, pos_hint={'top': .5})
 
-        button_layout = RelativeLayout(size_hint=(None, None), size=(250, 200), pos_hint={'x': 0.1, 'y': 0.2})
+        goods_button = Button(text='Goods', background_color=(0, 0, 0, 1), size=(200, 100), size_hint=(None, None),
+                              on_press=self.change_button_color)
+        goods_button.pressed = False
+        services_button = Button(text='Services', background_color=(0, 0, 0, 1), size=(200, 100), size_hint=(None, None),
+                                 on_press=self.change_button_color)
+        services_button.pressed = False
 
-        button1 = Button(text='Goods', size_hint=(None, None), size=(200, 100), pos_hint={'x': 0, 'y': 1})
-        button1.background_color = (1, 1, 1, 1)
-        button1.pressed = False
-        button1.bind(on_press=self.change_button_color)
-        button2 = Button(text='Services', size_hint=(None, None), size=(200, 100), pos_hint={'x': 0, 'y': 0.2})
-        button2.background_color = (1, 1, 1, 1)
-        button2.pressed = False
-        button2.bind(on_press=self.change_button_color)
+        button_layout = BoxLayout(orientation='vertical', spacing=100)
+        aside = AnchorLayout(anchor_x='left', anchor_y='center', padding=(30, 0))
 
-        button_layout.add_widget(button1)
-        button_layout.add_widget(button2)
+        aside.add_widget(button_layout)
 
-        self.add_widget(button_layout)
-        with self.canvas:
-            Color(0.2, 0.2, 0.2, 1)
-            self.line = Line(points=[250, 0, 250, 1000], width=2)
+        button_layout.add_widget(goods_button)
+        button_layout.add_widget(services_button)
 
-        right_layout = RelativeLayout(size_hint=(None, None), size=(600, 400), pos_hint={'center_x': 0.8, 'center_y': 0.5})
+        scrollview = ScrollView(size=(1000, 500), size_hint=(None, None), pos=(200, 50))
 
-        scroll_view = ScrollView(do_scroll_y=True)
-        scroll_layout = BoxLayout(orientation='vertical', size_hint_y=None)
-        scroll_layout.bind(minimum_height=scroll_layout.setter('height'))
+        grid_layout = GridLayout(cols=3, spacing=20, size_hint_y=1.5, padding=(0, 50), pos=(250, 250))
+        grid_layout.bind(minimum_height=grid_layout.setter('height'))
 
-        text_input = TextInput(text="Пример текста", size_hint=(1, None), height=800, readonly=True)
+        cursor.execute("SELECT name_good, price, vendor_code FROM goods")
+        temp = cursor.fetchall()
 
-        scroll_layout.add_widget(text_input)
-        scroll_view.add_widget(scroll_layout)
-        right_layout.add_widget(scroll_view)
+        for i in temp:
+            box_layout = BoxLayout(orientation='vertical', size_hint_y=None, padding=(20, 50), spacing=25)
+            label_name = Label(text=f"Name: {i[0]}", color=(0, 0, 0, 1))
+            box_layout.add_widget(label_name)
+            label_price = Label(text=f"Price: {i[1]}", color=(0, 0, 0, 1))
+            box_layout.add_widget(label_price)
+            label_vendor_code = Label(text=f"Vendor Code: {i[2]}", color=(0, 0, 0, 1))
+            box_layout.add_widget(label_vendor_code)
+            grid_layout.add_widget(box_layout)
 
-        self.add_widget(right_layout)
+        scrollview.add_widget(grid_layout)
+        root.add_widget(aside)
+        root.add_widget(scrollview)
+
+        return root
 
     @staticmethod
     def change_button_color(instance):
@@ -65,11 +79,5 @@ class MyWindow(BoxLayout):
         self.rect.pos = self.pos
 
 
-class MyApp(App):
-    def build(self):
-        self.title = "Zooshop"
-        return MyWindow()
-
-
 if __name__ == '__main__':
-    MyApp().run()
+    ZooshopApp().run()
