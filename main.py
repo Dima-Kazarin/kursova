@@ -1,5 +1,6 @@
 from kivy.app import App
 from kivy.core.window import Window
+from kivy.uix.gridlayout import GridLayout
 from kivy.uix.label import Label
 from kivy.uix.textinput import TextInput
 from kivy.uix.boxlayout import BoxLayout
@@ -22,6 +23,61 @@ conn = mysql.connector.connect(**config)
 cursor = conn.cursor()
 
 Window.clearcolor = (247 / 255, 237 / 255, 208 / 255, 1)
+
+
+class GoodsApp(App):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.goods_button = Button(text='Goods', background_color=(0, 0, 0, 1), size=(200, 50), size_hint=(None, None),
+                                   on_press=self.press_goods)
+        self.services_button = Button(text='Services', background_color=(0, 0, 0, 1), size=(200, 50),
+                                      size_hint=(None, None), on_press=self.press_services)
+
+    def build(self):
+        root = BoxLayout(orientation='horizontal', size=(250, 100), size_hint=(None, None),
+                         spacing=500, pos_hint={'top': .5})
+
+        self.goods_button.disabled = True
+
+        button_layout = BoxLayout(orientation='vertical', spacing=100)
+        aside = AnchorLayout(anchor_x='left', anchor_y='center')
+
+        aside.add_widget(button_layout)
+
+        button_layout.add_widget(self.goods_button)
+        button_layout.add_widget(self.services_button)
+
+        scrollview = ScrollView(size=(1000, 500), size_hint=(None, None), pos=(200, 50))
+
+        grid_layout = GridLayout(cols=3, spacing=20, size_hint_y=1.5, padding=(0, 50), pos=(250, 250))
+        grid_layout.bind(minimum_height=grid_layout.setter('height'))
+
+        cursor.execute("SELECT name_good, price, vendor_code FROM goods")
+        goods = cursor.fetchall()
+
+        for i in goods:
+            box_layout = BoxLayout(orientation='vertical', size_hint_y=None, padding=(20, 50), spacing=25)
+            label_name = Label(text=f"Name: {i[0]}", color=(0, 0, 0, 1))
+            box_layout.add_widget(label_name)
+            label_price = Label(text=f"Price: {i[1]}", color=(0, 0, 0, 1))
+            box_layout.add_widget(label_price)
+            label_vendor_code = Label(text=f"Vendor Code: {i[2]}", color=(0, 0, 0, 1))
+            box_layout.add_widget(label_vendor_code)
+            grid_layout.add_widget(box_layout)
+
+        scrollview.add_widget(grid_layout)
+        root.add_widget(aside)
+        root.add_widget(scrollview)
+
+        return root
+
+    def press_goods(self, instance):
+        instance.disabled = True
+        self.services_button.disabled = False
+
+    def press_services(self, instance):
+        instance.disabled = True
+        self.goods_button.disabled = False
 
 
 class TableApp(App):
@@ -66,7 +122,7 @@ class TableApp(App):
             price = self.price_input.text
             vendor_code = self.vendor_input.text
 
-            cursor.execute('INSERT INTO `goods` (guid, name_good, price, vendor_code) VALUES (%s, %s, %s, %s)',
+            cursor.execute('INSERT INTO `goods` (id, name_good, price, vendor_code) VALUES (%s, %s, %s, %s)',
                            [str(uuid4()), name_good, int(price), int(vendor_code)])
         elif self.table == 'services':
             kind_of_animal = self.animal_input.text
@@ -98,6 +154,10 @@ class TableApp(App):
         self.stop()
         self.run()
 
+    def press_back(self, instance):
+        self.stop()
+        AdminApp().run()
+
     def add_buttons(self, add_layout, edit_layout, delete_layout, button_layout, id_input, field_input, change_input,
                     del_id_input,
                     *args):
@@ -106,33 +166,37 @@ class TableApp(App):
         for i in range(len(args)):
             add_layout.add_widget(args[i])
 
-        add_layout.add_widget(Button(text='add', background_color=(0, 0, 0, 1), size=(100, 30),
+        add_layout.add_widget(Button(text='add', background_color=(0, 0, 0, 1), size=(150, 30),
                                      size_hint=(None, None), on_press=self.press_add))
 
         edit_layout.add_widget(Label(text='Edit', size=(50, 10), color=(0, 0, 0, 1), size_hint=(None, None)))
         edit_layout.add_widget(id_input)
         edit_layout.add_widget(field_input)
         edit_layout.add_widget(change_input)
-        edit_layout.add_widget(Button(text='edit', background_color=(0, 0, 0, 1), size=(100, 30),
+        edit_layout.add_widget(Button(text='edit', background_color=(0, 0, 0, 1), size=(150, 30),
                                       size_hint=(None, None), on_press=self.press_edit))
 
         delete_layout.add_widget(Label(text='Delete', size=(50, 10), color=(0, 0, 0, 1), size_hint=(None, None)))
         delete_layout.add_widget(del_id_input)
-        delete_layout.add_widget(Button(text='delete', background_color=(0, 0, 0, 1), size=(100, 30),
+        delete_layout.add_widget(Button(text='delete', background_color=(0, 0, 0, 1), size=(150, 30),
                                         size_hint=(None, None), on_press=self.press_delete))
 
         button_layout.add_widget(add_layout)
         button_layout.add_widget(edit_layout)
         button_layout.add_widget(delete_layout)
+        button_layout.add_widget(Label(size=(100, 30), size_hint=(None, None)))
+        button_layout.add_widget(Button(text='<-', background_color=(0, 0, 0, 1), size=(100, 30),
+                                        size_hint=(None, None), on_press=self.press_back))
 
     @staticmethod
     def add_items_to_layout(layout, button_layout, anchor, *args):
         for i in range(len(args)):
             layout.add_widget(args[i])
 
-        root = ScrollView(size_hint=(None, None), size=(700, 300), scroll_y=0)
+        root = ScrollView(size_hint=(None, None), size=(700, 300), scroll_y=0, do_scroll_x=False)
         root.add_widget(layout)
         button_layout.add_widget(root)
+
         anchor.add_widget(button_layout)
 
     @staticmethod
@@ -240,7 +304,7 @@ class TableApp(App):
 
             name_good = Label(text='name good', size=(50, 10), color=(0, 0, 0, 1), size_hint=(None, None))
             vendor_code = Label(text='vendor code', size=(50, 10), color=(0, 0, 0, 1), size_hint=(None, None))
-            id = Label(text='guid', size=(50, 10), color=(0, 0, 0, 1), size_hint=(None, None))
+            id = Label(text='id', size=(50, 10), color=(0, 0, 0, 1), size_hint=(None, None))
 
             self.price_input = TextInput(size_hint=(None, None), size=(150, 30),
                                          hint_text='Enter price')
@@ -328,7 +392,8 @@ class StartApp(App):
         animals = [j for i in cursor.fetchall() for j in i]
         user_animal = ', '.join(i for i in animals)
 
-        goods_button = Button(text='Goods', background_color=(0, 0, 0, 1), size=(200, 50), size_hint=(None, None))
+        goods_button = Button(text='Goods', background_color=(0, 0, 0, 1), size=(200, 50), size_hint=(None, None),
+                              on_press=self.press_goods)
         services_button = Button(text='Services', background_color=(0, 0, 0, 1), size=(200, 50), size_hint=(None, None))
 
         client_label = Label(text='Client', size_hint=(None, None), size=(200, 10), color=(0, 0, 0, 1), bold=True,
@@ -366,6 +431,10 @@ class StartApp(App):
 
         return layout
 
+    def press_goods(self, instance):
+        self.stop()
+        GoodsApp().run()
+
 
 class RegistrationApp(App):
     def __init__(self, **kwargs):
@@ -377,6 +446,7 @@ class RegistrationApp(App):
                                     hint_text='Enter your birth date', pos=(100, 60))
         self.phone_number = TextInput(size_hint=(None, None), size=(220, 30),
                                       hint_text='Enter your phone number', pos=(100, 40))
+        self.a_label = Label(size_hint=(1.1, None), size=(100, 10), color=(1, 0, 0, 1), bold=True)
 
     def build(self):
         self.title = 'Authorization'
@@ -428,6 +498,7 @@ class RegistrationApp(App):
 
         layout.add_widget(BoxLayout(size_hint=(1, 1)))
         layout.add_widget(button_layout)
+        layout.add_widget(self.a_label)
 
         anchor.add_widget(layout)
 
@@ -447,8 +518,10 @@ class RegistrationApp(App):
                 user_id = cursor.fetchone()[0]
                 self.stop()
                 StartApp(user_id).run()
+            else:
+                self.a_label.text = 'Name or password is incorrect'
         else:
-            print("Name or password is empty")
+            self.a_label.text = 'Name or password is empty'
 
     def press_register(self, instance):
         name = self.login.text
@@ -456,17 +529,21 @@ class RegistrationApp(App):
         birth_day = self.birth_date.text
         password = self.password.text
 
-        date_format = '%d-%m-%Y'
-        date_obj = datetime.strptime(birth_day, date_format)
+        try:
+            date_format = '%d-%m-%Y'
+            date_obj = datetime.strptime(birth_day, date_format)
 
-        if name and password and birth_day and phone_number:
-            cursor.execute('INSERT INTO `clients` (name, phone_number, birth_day, password) VALUES (%s, %s, %s, %s)',
-                           [name, int(phone_number), date_obj, password])
-            cursor.execute('SELECT id FROM clients WHERE name = %s', (name,))
-            user_id = cursor.fetchone()[0]
-            conn.commit()
-            self.stop()
-            StartApp(user_id).run()
+            if name and password and birth_day and phone_number:
+                cursor.execute(
+                    'INSERT INTO `clients` (name, phone_number, birth_day, password) VALUES (%s, %s, %s, %s)',
+                    [name, int(phone_number), date_obj, password])
+                cursor.execute('SELECT id FROM clients WHERE name = %s', (name,))
+                user_id = cursor.fetchone()[0]
+                conn.commit()
+                self.stop()
+                StartApp(user_id).run()
+        except ValueError:
+            self.a_label.text = 'Data is incorrect'
 
     def press_admin(self, instance):
         if self.login.text == 'admin' and self.password.text == 'admin':
