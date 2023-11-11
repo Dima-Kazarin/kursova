@@ -436,16 +436,12 @@ class StartApp(App):
         GoodsApp().run()
 
 
-class RegistrationApp(App):
+class LoginApp(App):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.login = TextInput(size_hint=(None, None), size=(220, 30), hint_text='Enter your login', pos=(100, 100))
         self.password = TextInput(size_hint=(None, None), size=(220, 30),
                                   hint_text='Enter your password', pos=(100, 80), password=True)
-        self.birth_date = TextInput(size_hint=(None, None), size=(220, 30),
-                                    hint_text='Enter your birth date', pos=(100, 60))
-        self.phone_number = TextInput(size_hint=(None, None), size=(220, 30),
-                                      hint_text='Enter your phone number', pos=(100, 40))
         self.a_label = Label(size_hint=(1.1, None), size=(100, 10), color=(1, 0, 0, 1), bold=True)
 
     def build(self):
@@ -462,13 +458,9 @@ class RegistrationApp(App):
         aut_label = Label(text='Authorization', size_hint=(1.2, None), size=(100, 70), color=(0, 0, 0, 1), bold=True)
         log_label = Label(text='Login', size_hint=(.17, None), size=(100, 10), color=(0, 0, 0, 1))
         password_label = Label(text='Password', size_hint=(.27, None), size=(100, 10), color=(0, 0, 0, 1))
-        birth_label = Label(text='Birth date', size_hint=(.27, None), size=(100, 10), color=(0, 0, 0, 1))
-        phone_label = Label(text='Phone number', size_hint=(.4, None), size=(100, 10), color=(0, 0, 0, 1))
 
         log_layout = BoxLayout(orientation='vertical', size=(250, 30), size_hint=(None, None), spacing=10)
         pas_layout = BoxLayout(orientation='vertical', size=(250, 30), size_hint=(None, None), spacing=10)
-        date_layout = BoxLayout(orientation='vertical', size=(250, 30), size_hint=(None, None), spacing=10)
-        phone_layout = BoxLayout(orientation='vertical', size=(250, 30), size_hint=(None, None), spacing=10)
         button_layout = BoxLayout(orientation='vertical', size=(250, 30), size_hint=(None, None), spacing=25)
 
         anchor = AnchorLayout(anchor_x='center', anchor_y='center', pos_hint={'top': .95})
@@ -480,12 +472,6 @@ class RegistrationApp(App):
         pas_layout.add_widget(password_label)
         pas_layout.add_widget(self.password)
 
-        date_layout.add_widget(birth_label)
-        date_layout.add_widget(self.birth_date)
-
-        phone_layout.add_widget(phone_label)
-        phone_layout.add_widget(self.phone_number)
-
         button_layout.add_widget(login_button)
         button_layout.add_widget(register_button)
         button_layout.add_widget(admin_button)
@@ -493,8 +479,6 @@ class RegistrationApp(App):
         layout.add_widget(aut_label)
         layout.add_widget(log_layout)
         layout.add_widget(pas_layout)
-        layout.add_widget(date_layout)
-        layout.add_widget(phone_layout)
 
         layout.add_widget(BoxLayout(size_hint=(1, 1)))
         layout.add_widget(button_layout)
@@ -524,6 +508,79 @@ class RegistrationApp(App):
             self.a_label.text = 'Name or password is empty'
 
     def press_register(self, instance):
+        self.stop()
+        RegistrationApp().run()
+
+    def press_admin(self, instance):
+        if self.login.text == 'admin' and self.password.text == 'admin':
+            self.stop()
+            AdminApp().run()
+
+
+class RegistrationApp(App):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.login = TextInput(size_hint=(None, None), size=(220, 30), hint_text='Enter your login', pos=(100, 100))
+        self.password = TextInput(size_hint=(None, None), size=(220, 30),
+                                  hint_text='Enter your password', pos=(100, 80), password=True)
+        self.birth_date = TextInput(size_hint=(None, None), size=(220, 30),
+                                    hint_text='Enter your birth date', pos=(100, 60))
+        self.phone_number = TextInput(size_hint=(None, None), size=(220, 30),
+                                      hint_text='Enter your phone number', pos=(100, 40))
+        self.a_label = Label(size_hint=(1.1, None), size=(100, 10), color=(1, 0, 0, 1), bold=True)
+
+    def build(self):
+        self.title = 'Registration'
+
+        register_button = Button(text='Register', background_color=(0, 0, 0, 1), size=(150, 10), size_hint=(None, None),
+                                 pos_hint={'center_x': 0.4}, on_press=self.press_register)
+        back_button = Button(text='<-', background_color=(0, 0, 0, 1), size=(150, 10), size_hint=(None, None),
+                             pos_hint={'center_x': 0.4}, on_press=self.press_back)
+
+        aut_label = Label(text='Registration', size_hint=(1.2, None), size=(100, 70), color=(0, 0, 0, 1), bold=True)
+        log_label = Label(text='Login', size_hint=(.17, None), size=(100, 10), color=(0, 0, 0, 1))
+        password_label = Label(text='Password', size_hint=(.27, None), size=(100, 10), color=(0, 0, 0, 1))
+        birth_label = Label(text='Birth date', size_hint=(.27, None), size=(100, 10), color=(0, 0, 0, 1))
+        phone_label = Label(text='Phone number', size_hint=(.4, None), size=(100, 10), color=(0, 0, 0, 1))
+
+        log_layout = BoxLayout(orientation='vertical', size=(250, 30), size_hint=(None, None), spacing=10)
+        pas_layout = BoxLayout(orientation='vertical', size=(250, 30), size_hint=(None, None), spacing=10)
+        date_layout = BoxLayout(orientation='vertical', size=(250, 30), size_hint=(None, None), spacing=10)
+        phone_layout = BoxLayout(orientation='vertical', size=(250, 30), size_hint=(None, None), spacing=10)
+        button_layout = BoxLayout(orientation='vertical', size=(250, 30), size_hint=(None, None), spacing=25)
+
+        anchor = AnchorLayout(anchor_x='center', anchor_y='center', pos_hint={'top': .95})
+        layout = BoxLayout(orientation='vertical', pos=(300, 220), size=(180, 200), size_hint=(None, None), spacing=40)
+
+        log_layout.add_widget(log_label)
+        log_layout.add_widget(self.login)
+
+        pas_layout.add_widget(password_label)
+        pas_layout.add_widget(self.password)
+
+        date_layout.add_widget(birth_label)
+        date_layout.add_widget(self.birth_date)
+
+        phone_layout.add_widget(phone_label)
+        phone_layout.add_widget(self.phone_number)
+
+        button_layout.add_widget(register_button)
+        button_layout.add_widget(back_button)
+
+        layout.add_widget(aut_label)
+        layout.add_widget(log_layout)
+        layout.add_widget(pas_layout)
+        layout.add_widget(date_layout)
+        layout.add_widget(phone_layout)
+
+        layout.add_widget(button_layout)
+        layout.add_widget(self.a_label)
+
+        anchor.add_widget(layout)
+
+        return anchor
+
+    def press_register(self, instance):
         name = self.login.text
         phone_number = self.phone_number.text
         birth_day = self.birth_date.text
@@ -545,11 +602,10 @@ class RegistrationApp(App):
         except ValueError:
             self.a_label.text = 'Data is incorrect'
 
-    def press_admin(self, instance):
-        if self.login.text == 'admin' and self.password.text == 'admin':
-            self.stop()
-            AdminApp().run()
+    def press_back(self, instance):
+        self.stop()
+        LoginApp().run()
 
 
 if __name__ == '__main__':
-    RegistrationApp().run()
+    LoginApp().run()
