@@ -103,48 +103,58 @@ class TableApp(App):
         if self.table == 'animals':
             nickname = self.name_input.text
             kind_of_animal = self.animal_input.text
-            owner = self.owner_input.text
+            owner_id = self.owner_input.text
 
-            cursor.execute('INSERT INTO animals (nickname, kind_of_animal, owner) VALUES (%s, %s, %s)',
-                           [nickname, kind_of_animal, owner])
+            if nickname and kind_of_animal and owner_id:
+                cursor.execute('INSERT INTO animals (nickname, kind_of_animal, owner_id) VALUES (%s, %s, %s)',
+                               [nickname, kind_of_animal, int(owner_id)])
         elif self.table == 'clients':
             name = self.name_input.text
             phone_number = self.phone_input.text
             birth_day = self.birth_input.text
             password = self.password_input.text
-            date_format = '%d-%m-%Y'
-            date_obj = datetime.strptime(birth_day, date_format)
+            try:
+                date_format = '%d-%m-%Y'
+                date_obj = datetime.strptime(birth_day, date_format)
+            except ValueError:
+                pass
 
-            cursor.execute('INSERT INTO `clients` (name, phone_number, birth_day, password) VALUES (%s, %s, %s, %s)',
-                           [name, int(phone_number), date_obj, password])
+            if name and phone_number and birth_day and password:
+                cursor.execute(
+                    'INSERT INTO `clients` (name, phone_number, birth_day, password) VALUES (%s, %s, %s, %s)',
+                    [name, int(phone_number), date_obj, password])
         elif self.table == 'goods':
             name_good = self.name_input.text
             price = self.price_input.text
             vendor_code = self.vendor_input.text
 
-            cursor.execute('INSERT INTO `goods` (id, name_good, price, vendor_code) VALUES (%s, %s, %s, %s)',
-                           [str(uuid4()), name_good, int(price), int(vendor_code)])
+            if name_good and price and vendor_code:
+                cursor.execute('INSERT INTO `goods` (id, name_good, price, vendor_code) VALUES (%s, %s, %s, %s)',
+                               [str(uuid4()), name_good, int(price), int(vendor_code)])
         elif self.table == 'services':
             kind_of_animal = self.animal_input.text
             price = self.price_input.text
             title = self.title_input.text
 
-            cursor.execute('INSERT INTO `services` (kind_of_animal, price, title) VALUES (%s, %s, %s)',
-                           [kind_of_animal, int(price), title])
-
+            if kind_of_animal and price and title:
+                cursor.execute('INSERT INTO `services` (kind_of_animal, price, title) VALUES (%s, %s, %s)',
+                               [kind_of_animal, int(price), title])
         conn.commit()
         self.stop()
         self.run()
 
     def press_edit(self, instance):
-        change_id = self.id_input.text
-        field = self.field_input.text
-        change = self.change_input.text
-        cursor.execute(f'UPDATE {self.table} SET {field} = %s WHERE id = %s', [change, change_id])
-        conn.commit()
+        try:
+            change_id = self.id_input.text
+            field = self.field_input.text
+            change = self.change_input.text
+            cursor.execute(f'UPDATE {self.table} SET {field} = %s WHERE id = %s', [change, change_id])
+            conn.commit()
 
-        self.stop()
-        self.run()
+            self.stop()
+            self.run()
+        except:
+            pass
 
     def press_delete(self, instance):
         del_id = self.del_id_input.text
@@ -252,12 +262,12 @@ class TableApp(App):
 
         if self.table == 'animals':
             self.owner_input = TextInput(size_hint=(None, None), size=(150, 30),
-                                         hint_text='Enter owner')
+                                         hint_text='Enter owner id')
 
             owner_l = BoxLayout(orientation='vertical', spacing=15, size_hint=(None, None))
 
             nickname = Label(text='nickname', size=(50, 10), color=(0, 0, 0, 1), size_hint=(None, None))
-            owner = Label(text='owner', size=(50, 10), color=(0, 0, 0, 1), size_hint=(None, None))
+            owner = Label(text='owner_id', size=(50, 10), color=(0, 0, 0, 1), size_hint=(None, None))
 
             cursor.execute('SELECT * FROM animals')
             animals = cursor.fetchall()
@@ -388,7 +398,7 @@ class StartApp(App):
         cursor.execute('SELECT name, phone_number, birth_day FROM clients WHERE id = %s', (self.user_id,))
         user_info = cursor.fetchone()
 
-        cursor.execute('SELECT nickname FROM animals WHERE owner = %s', (user_info[0],))
+        cursor.execute('SELECT nickname FROM animals WHERE owner_id = %s', (self.user_id,))
         animals = [j for i in cursor.fetchall() for j in i]
         user_animal = ', '.join(i for i in animals)
 
@@ -527,6 +537,10 @@ class RegistrationApp(App):
                                     hint_text='Enter your birth date', pos=(100, 60))
         self.phone_number = TextInput(size_hint=(None, None), size=(220, 30),
                                       hint_text='Enter your phone number', pos=(100, 40))
+        self.nickname = TextInput(size_hint=(None, None), size=(220, 30),
+                                  hint_text='Enter nickname(example - 1,2)', pos=(100, 40))
+        self.kind_of_animal = TextInput(size_hint=(None, None), size=(220, 30),
+                                        hint_text='Enter (example - cat, dog)', pos=(100, 40))
         self.a_label = Label(size_hint=(1.1, None), size=(100, 10), color=(1, 0, 0, 1), bold=True)
 
     def build(self):
@@ -543,13 +557,20 @@ class RegistrationApp(App):
         birth_label = Label(text='Birth date', size_hint=(.27, None), size=(100, 10), color=(0, 0, 0, 1))
         phone_label = Label(text='Phone number', size_hint=(.4, None), size=(100, 10), color=(0, 0, 0, 1))
 
+        nickname_label = Label(text='Nickname(animal)', size_hint=(.5, None), size=(100, 10), color=(0, 0, 0, 1))
+        kind_of_animal_label = Label(text='Kind of animal', size_hint=(.4, None), size=(100, 10), color=(0, 0, 0, 1))
+
         log_layout = BoxLayout(orientation='vertical', size=(250, 30), size_hint=(None, None), spacing=10)
         pas_layout = BoxLayout(orientation='vertical', size=(250, 30), size_hint=(None, None), spacing=10)
         date_layout = BoxLayout(orientation='vertical', size=(250, 30), size_hint=(None, None), spacing=10)
         phone_layout = BoxLayout(orientation='vertical', size=(250, 30), size_hint=(None, None), spacing=10)
+
+        nickname_layout = BoxLayout(orientation='vertical', size=(250, 30), size_hint=(None, None), spacing=10)
+        animal_layout = BoxLayout(orientation='vertical', size=(250, 30), size_hint=(None, None), spacing=10)
+
         button_layout = BoxLayout(orientation='vertical', size=(250, 30), size_hint=(None, None), spacing=25)
 
-        anchor = AnchorLayout(anchor_x='center', anchor_y='center', pos_hint={'top': .95})
+        anchor = AnchorLayout(anchor_x='center', anchor_y='center', pos_hint={'top': .8})
         layout = BoxLayout(orientation='vertical', pos=(300, 220), size=(180, 200), size_hint=(None, None), spacing=40)
 
         log_layout.add_widget(log_label)
@@ -564,6 +585,12 @@ class RegistrationApp(App):
         phone_layout.add_widget(phone_label)
         phone_layout.add_widget(self.phone_number)
 
+        nickname_layout.add_widget(nickname_label)
+        nickname_layout.add_widget(self.nickname)
+
+        animal_layout.add_widget(kind_of_animal_label)
+        animal_layout.add_widget(self.kind_of_animal)
+
         button_layout.add_widget(register_button)
         button_layout.add_widget(back_button)
 
@@ -572,6 +599,8 @@ class RegistrationApp(App):
         layout.add_widget(pas_layout)
         layout.add_widget(date_layout)
         layout.add_widget(phone_layout)
+        layout.add_widget(nickname_layout)
+        layout.add_widget(animal_layout)
 
         layout.add_widget(button_layout)
         layout.add_widget(self.a_label)
@@ -585,6 +614,12 @@ class RegistrationApp(App):
         phone_number = self.phone_number.text
         birth_day = self.birth_date.text
         password = self.password.text
+        nickname = self.nickname.text
+        animal = self.kind_of_animal.text
+
+        nick = nickname.split(',')
+
+        anim = animal.split(',')
 
         try:
             date_format = '%d-%m-%Y'
@@ -596,6 +631,13 @@ class RegistrationApp(App):
                     [name, int(phone_number), date_obj, password])
                 cursor.execute('SELECT id FROM clients WHERE name = %s', (name,))
                 user_id = cursor.fetchone()[0]
+
+                if nickname and animal:
+                    for i in range(len(nick)):
+                        cursor.execute(
+                            'INSERT INTO `animals` (nickname, kind_of_animal, owner_id) VALUES (%s, %s, %s)',
+                            [nick[i], anim[i], user_id])
+
                 conn.commit()
                 self.stop()
                 StartApp(user_id).run()
