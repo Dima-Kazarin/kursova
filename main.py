@@ -100,48 +100,51 @@ class TableApp(App):
         super(TableApp, self).__init__(**kwargs)
 
     def press_add(self, instance):
-        if self.table == 'animals':
-            nickname = self.name_input.text
-            kind_of_animal = self.animal_input.text
-            owner_id = self.owner_input.text
+        try:
+            if self.table == 'animals':
+                nickname = self.name_input.text
+                kind_of_animal = self.animal_input.text
+                owner_id = self.owner_input.text
 
-            if nickname and kind_of_animal and owner_id:
-                cursor.execute('INSERT INTO animals (nickname, kind_of_animal, owner_id) VALUES (%s, %s, %s)',
-                               [nickname, kind_of_animal, int(owner_id)])
-        elif self.table == 'clients':
-            name = self.name_input.text
-            phone_number = self.phone_input.text
-            birth_day = self.birth_input.text
-            password = self.password_input.text
-            try:
-                date_format = '%d-%m-%Y'
-                date_obj = datetime.strptime(birth_day, date_format)
-            except ValueError:
-                pass
+                if nickname and kind_of_animal and owner_id:
+                    cursor.execute('INSERT INTO animals (nickname, kind_of_animal, owner_id) VALUES (%s, %s, %s)',
+                                   [nickname, kind_of_animal, int(owner_id)])
+            elif self.table == 'clients':
+                name = self.name_input.text
+                phone_number = self.phone_input.text
+                birth_day = self.birth_input.text
+                password = self.password_input.text
+                try:
+                    date_format = '%d-%m-%Y'
+                    date_obj = datetime.strptime(birth_day, date_format)
+                except ValueError:
+                    pass
 
-            if name and phone_number and birth_day and password:
-                cursor.execute(
-                    'INSERT INTO `clients` (name, phone_number, birth_day, password) VALUES (%s, %s, %s, %s)',
-                    [name, int(phone_number), date_obj, password])
-        elif self.table == 'goods':
-            name_good = self.name_input.text
-            price = self.price_input.text
-            vendor_code = self.vendor_input.text
+                if name and phone_number and birth_day and password:
+                    cursor.execute(
+                        'INSERT INTO `clients` (name, phone_number, birth_day, password) VALUES (%s, %s, %s, %s)',
+                        [name, phone_number, date_obj, password])
+            elif self.table == 'goods':
+                name_good = self.name_input.text
+                price = self.price_input.text
+                vendor_code = self.vendor_input.text
 
-            if name_good and price and vendor_code:
-                cursor.execute('INSERT INTO `goods` (id, name_good, price, vendor_code) VALUES (%s, %s, %s, %s)',
-                               [str(uuid4()), name_good, int(price), int(vendor_code)])
-        elif self.table == 'services':
-            kind_of_animal = self.animal_input.text
-            price = self.price_input.text
-            title = self.title_input.text
+                if name_good and price and vendor_code:
+                    cursor.execute('INSERT INTO `goods` (id, name_good, price, vendor_code) VALUES (%s, %s, %s, %s)',
+                                   [str(uuid4()), name_good, int(price), int(vendor_code)])
+            elif self.table == 'services':
+                kind_of_animal = self.animal_input.text
+                price = self.price_input.text
+                title = self.title_input.text
 
-            if kind_of_animal and price and title:
-                cursor.execute('INSERT INTO `services` (kind_of_animal, price, title) VALUES (%s, %s, %s)',
-                               [kind_of_animal, int(price), title])
-        conn.commit()
-        self.stop()
-        self.run()
+                if kind_of_animal and price and title:
+                    cursor.execute('INSERT INTO `services` (kind_of_animal, price, title) VALUES (%s, %s, %s)',
+                                   [kind_of_animal, int(price), title])
+            conn.commit()
+            self.stop()
+            self.run()
+        except:
+            pass
 
     def press_edit(self, instance):
         try:
@@ -421,7 +424,7 @@ class StartApp(App):
         label_layout = BoxLayout(orientation='vertical', size_hint=(None, None), spacing=90, pos_hint={'top': .4})
         client_layout = AnchorLayout(anchor_x='center', anchor_y='top', size_hint=(5, .8))
         layout = BoxLayout(orientation='horizontal', size=(250, 100), size_hint=(None, None), pos=(0, 200),
-                           spacing=250, pos_hint={'top': .5})
+                           spacing=550, pos_hint={'top': .5})
 
         button_layout.add_widget(goods_button)
         button_layout.add_widget(services_button)
@@ -505,7 +508,6 @@ class LoginApp(App):
         if name and password:
             cursor.execute('SELECT * FROM clients WHERE name = %s AND password = %s', (name, password))
             result = cursor.fetchall()
-            conn.commit()
 
             if result:
                 cursor.execute('SELECT id FROM clients WHERE name = %s', (name,))
@@ -618,7 +620,6 @@ class RegistrationApp(App):
         animal = self.kind_of_animal.text
 
         nick = nickname.split(',')
-
         anim = animal.split(',')
 
         try:
@@ -628,7 +629,7 @@ class RegistrationApp(App):
             if name and password and birth_day and phone_number:
                 cursor.execute(
                     'INSERT INTO `clients` (name, phone_number, birth_day, password) VALUES (%s, %s, %s, %s)',
-                    [name, int(phone_number), date_obj, password])
+                    [name, phone_number, date_obj, password])
                 cursor.execute('SELECT id FROM clients WHERE name = %s', (name,))
                 user_id = cursor.fetchone()[0]
 
@@ -638,10 +639,10 @@ class RegistrationApp(App):
                             'INSERT INTO `animals` (nickname, kind_of_animal, owner_id) VALUES (%s, %s, %s)',
                             [nick[i], anim[i], user_id])
 
-                conn.commit()
+                    conn.commit()
                 self.stop()
                 StartApp(user_id).run()
-        except ValueError:
+        except:
             self.a_label.text = 'Data is incorrect'
 
     def press_back(self, instance):
