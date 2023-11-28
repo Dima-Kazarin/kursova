@@ -1,5 +1,6 @@
 from kivy.app import App
 from kivy.core.window import Window
+from kivy.uix.dropdown import DropDown
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.label import Label
 from kivy.uix.textinput import TextInput
@@ -25,17 +26,130 @@ cursor = conn.cursor()
 Window.clearcolor = (247 / 255, 237 / 255, 208 / 255, 1)
 
 
+class ServicesApp(App):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.goods_button = None
+        self.services_button = None
+        self.services = None
+        self.grid_layout = None
+        self.select_animal = None
+        self.dropdown = None
+
+    def build(self):
+        root = BoxLayout(orientation='horizontal', size=(250, 100), size_hint=(None, None),
+                         spacing=350, pos_hint={'top': .5})
+
+        self.goods_button = Button(text='Goods', background_color=(0, 0, 0, 1), size=(200, 50),
+                                   size_hint=(None, None),
+                                   on_press=self.press_goods)
+
+        self.services_button = Button(text='Services', background_color=(0, 0, 0, 1), size=(200, 50),
+                                      size_hint=(None, None), on_press=self.press_services)
+        logout_button = Button(text='Log out', background_color=(0, 0, 0, 1), size=(200, 50), size_hint=(None, None),
+                               on_press=self.press_logout)
+
+        self.services_button.disabled = True
+
+        button_layout = BoxLayout(orientation='vertical', spacing=100)
+        aside = AnchorLayout(anchor_x='left', anchor_y='center')
+
+        aside.add_widget(button_layout)
+
+        self.dropdown = DropDown(on_select=self.toggle_spin)
+        self.select_animal = Button(text='Animal', size_hint=(None, None), size=(100, 50),
+                                    background_color=(0, 0, 0, 1), on_release=self.dropdown.open)
+
+        cursor.execute('SELECT DISTINCT kind_of_animal FROM services')
+        animal = [('all',)]
+        animal.extend(cursor.fetchall())
+        animals = [j for i in animal for j in i]
+
+        for animal_text in animals:
+            btn = Button(text=animal_text, size_hint_y=None, height=44,
+                         on_release=lambda x: self.dropdown.select(x.text))
+            self.dropdown.add_widget(btn)
+
+        button_layout.add_widget(self.goods_button)
+        button_layout.add_widget(self.services_button)
+        button_layout.add_widget(logout_button)
+
+        scrollview = ScrollView(size=(1000, 500), size_hint=(None, None), pos=(200, 50))
+
+        self.grid_layout = GridLayout(cols=3, spacing=20, size_hint_y=1.5, padding=(0, 50), pos=(250, 250))
+        self.grid_layout.bind(minimum_height=self.grid_layout.setter('height'))
+
+        cursor.execute('SELECT kind_of_animal, price, title FROM services')
+        self.services = cursor.fetchall()
+
+        for i in self.services:
+            box_layout = BoxLayout(orientation='vertical', size_hint_y=None, padding=(20, 50), spacing=25)
+            label_name = Label(text=f"kind of animal: {i[0]}", color=(0, 0, 0, 1))
+            box_layout.add_widget(label_name)
+            label_price = Label(text=f"Price: {i[1]}", color=(0, 0, 0, 1))
+            box_layout.add_widget(label_price)
+            label_vendor_code = Label(text=f"title: {i[2]}", color=(0, 0, 0, 1))
+            box_layout.add_widget(label_vendor_code)
+            self.grid_layout.add_widget(box_layout)
+
+        scrollview.add_widget(self.grid_layout)
+        root.add_widget(aside)
+
+        root.add_widget(scrollview)
+        root.add_widget(self.select_animal)
+
+        return root
+
+    def press_goods(self, instance):
+        instance.disabled = True
+        self.services_button.disabled = False
+        self.stop()
+        GoodsApp().run()
+
+    def press_services(self, instance):
+        instance.disabled = True
+        self.goods_button.disabled = False
+
+    def press_logout(self, instance):
+        self.stop()
+        LoginApp().run()
+
+    def toggle_spin(self, instance, value):
+        if value == 'all':
+            cursor.execute('SELECT kind_of_animal, price, title FROM services')
+        else:
+            cursor.execute('SELECT kind_of_animal, price, title FROM services WHERE kind_of_animal = %s', (value,))
+
+        self.services = cursor.fetchall()
+        self.grid_layout.clear_widgets()
+
+        for i in self.services:
+            box_layout = BoxLayout(orientation='vertical', size_hint_y=None, padding=(20, 50), spacing=25)
+            label_name = Label(text=f"kind of animal: {i[0]}", color=(0, 0, 0, 1))
+            box_layout.add_widget(label_name)
+            label_price = Label(text=f"Price: {i[1]}", color=(0, 0, 0, 1))
+            box_layout.add_widget(label_price)
+            label_vendor_code = Label(text=f"title: {i[2]}", color=(0, 0, 0, 1))
+            box_layout.add_widget(label_vendor_code)
+            self.grid_layout.add_widget(box_layout)
+
+
 class GoodsApp(App):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.goods_button = Button(text='Goods', background_color=(0, 0, 0, 1), size=(200, 50), size_hint=(None, None),
-                                   on_press=self.press_goods)
-        self.services_button = Button(text='Services', background_color=(0, 0, 0, 1), size=(200, 50),
-                                      size_hint=(None, None), on_press=self.press_services)
+        self.goods_button = None
+        self.services_button = None
 
     def build(self):
         root = BoxLayout(orientation='horizontal', size=(250, 100), size_hint=(None, None),
                          spacing=500, pos_hint={'top': .5})
+
+        self.goods_button = Button(text='Goods', background_color=(0, 0, 0, 1), size=(200, 50), size_hint=(None, None),
+                                   on_press=self.press_goods)
+        self.services_button = Button(text='Services', background_color=(0, 0, 0, 1), size=(200, 50),
+                                      size_hint=(None, None), on_press=self.press_services)
+        logout_button = Button(text='Log out', background_color=(0, 0, 0, 1), size=(200, 50), size_hint=(None, None),
+                               on_press=self.press_logout)
 
         self.goods_button.disabled = True
 
@@ -46,6 +160,7 @@ class GoodsApp(App):
 
         button_layout.add_widget(self.goods_button)
         button_layout.add_widget(self.services_button)
+        button_layout.add_widget(logout_button)
 
         scrollview = ScrollView(size=(1000, 500), size_hint=(None, None), pos=(200, 50))
 
@@ -78,6 +193,12 @@ class GoodsApp(App):
     def press_services(self, instance):
         instance.disabled = True
         self.goods_button.disabled = False
+        self.stop()
+        ServicesApp().run()
+
+    def press_logout(self, instance):
+        self.stop()
+        LoginApp().run()
 
 
 class TableApp(App):
@@ -371,6 +492,9 @@ class AdminApp(App):
         services_button = Button(text='Services', background_color=(0, 0, 0, 1), size=(100, 30), size_hint=(None, None),
                                  on_press=self.press_button)
 
+        back_button = Button(text='<-', background_color=(0, 0, 0, 1), size=(100, 30), size_hint=(None, None),
+                             on_press=self.press_back)
+
         button_layout = BoxLayout(orientation='horizontal', spacing=10, size_hint=(.2, None))
 
         anchor = AnchorLayout(anchor_x='center', anchor_y='center')
@@ -379,6 +503,7 @@ class AdminApp(App):
         button_layout.add_widget(clients_button)
         button_layout.add_widget(goods_button)
         button_layout.add_widget(services_button)
+        button_layout.add_widget(back_button)
 
         anchor.add_widget(button_layout)
 
@@ -388,6 +513,10 @@ class AdminApp(App):
         table = instance.text.lower()
         self.stop()
         TableApp(table).run()
+
+    def press_back(self, instance):
+        self.stop()
+        LoginApp().run()
 
 
 class StartApp(App):
@@ -407,7 +536,10 @@ class StartApp(App):
 
         goods_button = Button(text='Goods', background_color=(0, 0, 0, 1), size=(200, 50), size_hint=(None, None),
                               on_press=self.press_goods)
-        services_button = Button(text='Services', background_color=(0, 0, 0, 1), size=(200, 50), size_hint=(None, None))
+        services_button = Button(text='Services', background_color=(0, 0, 0, 1), size=(200, 50), size_hint=(None, None),
+                                 on_press=self.press_services)
+        logout_button = Button(text='Log out', background_color=(0, 0, 0, 1), size=(200, 50), size_hint=(None, None),
+                               on_press=self.press_logout)
 
         client_label = Label(text='Client', size_hint=(None, None), size=(200, 10), color=(0, 0, 0, 1), bold=True,
                              font_size=20)
@@ -428,6 +560,7 @@ class StartApp(App):
 
         button_layout.add_widget(goods_button)
         button_layout.add_widget(services_button)
+        button_layout.add_widget(logout_button)
 
         client_layout.add_widget(client_label)
 
@@ -447,6 +580,14 @@ class StartApp(App):
     def press_goods(self, instance):
         self.stop()
         GoodsApp().run()
+
+    def press_services(self, instance):
+        self.stop()
+        ServicesApp().run()
+
+    def press_logout(self, instance):
+        self.stop()
+        LoginApp().run()
 
 
 class LoginApp(App):
